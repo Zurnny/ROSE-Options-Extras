@@ -1,0 +1,6 @@
+; Update list for Options Extras. Upload this next to mod.ini and the files folder.
+version=1.0
+03e3ea25fa3a0290c206eb317bacbc95d73ce273|mod.ini
+6eee1d0764c7cbebf4a04a1845ad5e9c4d1fe01e|files/Data/ui/themes/rose/game/chat_box.html
+ce020171cb1a2e6d10821ad6882926bdf9e752b9|files/Data/ui/themes/rose/game/dropped_item_labels.html
+ffc1e811c63a5000465908039a272dad1caa9543|files/Data/ui/themes/rose/game/options_bgfx.html
