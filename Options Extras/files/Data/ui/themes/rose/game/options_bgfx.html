@@ -525,7 +525,7 @@ end)
 -- SP_ADDON_APPLY), the rest pick it up when they next load.
 pcall(function()
     local document = document
-    local KEYS = {'dps_meter', 'exp_tracker', 'weapon_refresh', 'friend_levels', 'class_icons', 'summon_extras', 'slot_names'}
+    local KEYS = {'dps_meter', 'exp_tracker', 'weapon_refresh', 'friend_levels', 'class_icons', 'summon_extras'}
     local flags = {}
     pcall(function()
         if type(SP_ADDON_FLAGS) == 'table' then flags = SP_ADDON_FLAGS; return end
@@ -1859,13 +1859,6 @@ end)
                                         <td>
                                             <input id="sp-addon-summon_extras" type="checkbox" checked="" />
                                             <label for="sp-addon-summon_extras">Summon HP, range and low-HP warning</label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Bright Slot Names</td>
-                                        <td>
-                                            <input id="sp-addon-slot_names" type="checkbox" checked="" />
-                                            <label for="sp-addon-slot_names">Bright names on empty gear slots</label>
                                         </td>
                                     </tr>
                                     <tr>
