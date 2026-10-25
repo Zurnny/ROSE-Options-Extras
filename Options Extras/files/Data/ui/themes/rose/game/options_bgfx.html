@@ -519,6 +519,49 @@ local ok, err = pcall(function()
     end)
 end)
     </script>
+    <script>
+-- Add-on switches (Options Extras). Turns each add-on feature on and off.
+-- Saved in sp_addons.txt; open windows change straight away (through
+-- SP_ADDON_APPLY), the rest pick it up when they next load.
+pcall(function()
+    local document = document
+    local KEYS = {'dps_meter', 'exp_tracker', 'weapon_refresh', 'friend_levels', 'class_icons', 'summon_extras', 'slot_names'}
+    local flags = {}
+    pcall(function()
+        if type(SP_ADDON_FLAGS) == 'table' then flags = SP_ADDON_FLAGS; return end
+        local f = io.open('sp_addons.txt', 'r')
+        if not f then return end
+        for line in f:lines() do
+            local k, v = line:match('^%s*([%w_]+)%s*=%s*(%d)')
+            if k then flags[k] = (v == '1') end
+        end
+        f:close()
+    end)
+    SP_ADDON_FLAGS = flags
+    local function save()
+        local ok = pcall(function()
+            local f = assert(io.open('sp_addons.txt', 'w'))
+            for _, k in ipairs(KEYS) do f:write(k, '=', flags[k] == false and 0 or 1, '\n') end
+            f:close()
+        end)
+        local st = document:GetElementById('sp-addon-status')
+        if st and not ok then st.inner_rml = 'Could not save - this lasts until the game is closed.' end
+    end
+    for _, k in ipairs(KEYS) do
+        local box = document:GetElementById('sp-addon-' .. k)
+        if box then
+            if flags[k] == false then box:RemoveAttribute('checked') else box:SetAttribute('checked', '') end
+            box:AddEventListener('change', function()
+                flags[k] = box:HasAttribute('checked')
+                SP_ADDON_FLAGS = flags
+                save()
+                local list = type(SP_ADDON_APPLY) == 'table' and SP_ADDON_APPLY[k]
+                if list then for _, fn in ipairs(list) do pcall(fn) end end
+            end)
+        end
+    end
+end)
+    </script>
     </head>
 
     <body id="game-options" template="window-resizeable">
@@ -1770,6 +1813,68 @@ end)
             <tab class="default">UI</tab>
             <panel class="content-box">
                 <div class="options-panel">
+                        <div class="settings-group">
+                            <h3>Add-ons</h3>
+                            <table class="main">
+                                <tbody>
+                                    <!-- Add-on switches (script at the end of <head>); saved to sp_addons.txt.
+                                         A switch only does something while that add-on is on in the launcher. -->
+                                    <tr>
+                                        <td>DPS Meter</td>
+                                        <td>
+                                            <input id="sp-addon-dps_meter" type="checkbox" checked="" />
+                                            <label for="sp-addon-dps_meter">DPS meter under the target</label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>HUD Trackers</td>
+                                        <td>
+                                            <input id="sp-addon-exp_tracker" type="checkbox" checked="" />
+                                            <label for="sp-addon-exp_tracker">EXP per hour on the EXP bar</label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>HUD Trackers</td>
+                                        <td>
+                                            <input id="sp-addon-weapon_refresh" type="checkbox" checked="" />
+                                            <label for="sp-addon-weapon_refresh">Keep the HUD weapon durability up to date</label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Friend Levels</td>
+                                        <td>
+                                            <input id="sp-addon-friend_levels" type="checkbox" checked="" />
+                                            <label for="sp-addon-friend_levels">Remembered friend levels</label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Party and Group Extras</td>
+                                        <td>
+                                            <input id="sp-addon-class_icons" type="checkbox" checked="" />
+                                            <label for="sp-addon-class_icons">Class icons in party and group</label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Summon Gauge Plus</td>
+                                        <td>
+                                            <input id="sp-addon-summon_extras" type="checkbox" checked="" />
+                                            <label for="sp-addon-summon_extras">Summon HP, range and low-HP warning</label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Bright Slot Names</td>
+                                        <td>
+                                            <input id="sp-addon-slot_names" type="checkbox" checked="" />
+                                            <label for="sp-addon-slot_names">Bright names on empty gear slots</label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td><div id="sp-addon-status" style="font-size: 11dp; color: rgb(180, 180, 180);">Each switch only works while that add-on is turned on in the launcher.</div></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <div class="settings-group">
                             <h3>Windows</h3>
                             <table class="main">

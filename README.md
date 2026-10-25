@@ -2,7 +2,7 @@
 
 Chat colours, item label background and window rescue in Options.
 
-Adds to Options: Message Colours (pick a colour for each chat channel), a background slider for dropped item names, and a UI tab with "Bring all windows on screen".
+Adds to Options: Message Colours (pick a colour for each chat channel), a background slider for dropped item names, and a UI tab with "Bring all windows on screen" and switches to turn each add-on feature on and off.
 
 An add-on for [ROSE Mod Launcher](https://github.com/Zurnny/Rose_Mod_Launcher), for the game's **default** UI. The [Steampunk UI](https://github.com/Zurnny/SteamPunk) theme already includes this, so you don't need it with Steampunk (if both are on, Steampunk's files win).
 
