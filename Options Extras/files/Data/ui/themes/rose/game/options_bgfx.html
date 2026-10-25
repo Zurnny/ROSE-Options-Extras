@@ -542,7 +542,6 @@ pcall(function()
     }
     local flags = {}
     pcall(function()
-        if type(SP_ADDON_FLAGS) == 'table' then flags = SP_ADDON_FLAGS; return end
         local f = io.open('sp_addons.txt', 'r')
         if not f then return end
         for line in f:lines() do
@@ -563,7 +562,7 @@ pcall(function()
             found = text:find('SP_ADDON_SWITCH ' .. key, 1, true) ~= nil
         end)
         -- also counts if that window is open and has said hello
-        if type(SP_ADDON_APPLY) == 'table' and SP_ADDON_APPLY[key] then found = true end
+        pcall(function() if type(_G) == 'table' and type(_G.SP_ADDON_APPLY) == 'table' and _G.SP_ADDON_APPLY[key] then found = true end end)
         return found, readable
     end
     local function save()
@@ -606,13 +605,17 @@ pcall(function()
                     flags[k] = box:HasAttribute('checked')
                     SP_ADDON_FLAGS = flags
                     save()
-                    local fns = type(SP_ADDON_APPLY) == 'table' and SP_ADDON_APPLY[k]
-                    if fns then for _, fn in ipairs(fns) do pcall(fn) end end
+                    -- open windows pick it up from sp_addons.txt within 2 seconds;
+                    -- when windows can share, tell them straight away too
+                    pcall(function()
+                        local fns = type(_G) == 'table' and type(_G.SP_ADDON_APPLY) == 'table' and _G.SP_ADDON_APPLY[k]
+                        if fns then for _, fn in ipairs(fns) do pcall(fn) end end
+                    end)
                 end)
             end
         end
         local st = document:GetElementById('sp-addon-status')
-        if st then st.inner_rml = #rows > 0 and 'Each add-on you install adds its own switch here.' or '' end
+        if st then st.inner_rml = #rows > 0 and 'Each add-on you install adds its own switch here. Changes show within a couple of seconds.' or '' end
     end
     pcall(build)
     document:AddEventListener('show', function() pcall(build) end)
