@@ -1414,13 +1414,6 @@ end)
                                 <tr>
                                     <td></td>
                                     <td>
-                                        <input id="item-name" type="checkbox" data-checked="game.show_item_name" onchange="game-itemname"/>
-                                        <label for="item-name"><str string-id="1367">Show dropped item name</str></label>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td></td>
-                                    <td>
                                         <input id="hide-shop-names" type="checkbox" data-checked="game.hide_shop_names" onchange="game-hideshopnames"/>
                                         <label for="hide-shop-names"><str string-id="1373">Hide shop names</str></label>
                                     </td>
@@ -1875,6 +1868,13 @@ end)
                             <h3>Dropped Items</h3>
                             <table class="main">
                                 <tbody>
+                                        <tr>
+                                            <td>Item names</td>
+                                            <td>
+                                                <input id="item-name" type="checkbox" data-checked="game.show_item_name" onchange="game-itemname"/>
+                                                <label for="item-name"><str string-id="1367">Show dropped item name</str></label>
+                                            </td>
+                                        </tr>
                                         <tr>
                                             <td>Pickup status</td>
                                             <td>
