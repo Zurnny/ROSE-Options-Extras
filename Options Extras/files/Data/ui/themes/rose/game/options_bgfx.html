@@ -522,100 +522,117 @@ local ok, err = pcall(function()
 end)
     </script>
     <script>
--- Add-on switches (Options Extras). Each add-on installed through the
--- launcher gets its own switch here; add-ons that are not installed are not
--- listed. An add-on counts as installed when its window file in the game
--- folder carries its switch marker ("SP_ADDON_SWITCH <key>"), so switches come
--- and go with the add-ons, with no list to keep up to date by hand.
--- Choices are saved in sp_addons.txt; open windows change straight away.
+-- Add-on switches (Options Extras). Every add-on window lists itself in
+-- sp_addons_list.txt when it loads (key|switch text|add-on), and this shows a
+-- switch for each one listed, so each add-on brings its own switch. A window
+-- that has never been open since the add-on was installed shows up after it
+-- first opens. If an add-on is removed in the launcher, its switch is dropped
+-- the next time Options opens (when the game lets the UI read its files).
+-- Choices are saved in sp_addons.txt; each add-on window reads that every
+-- 2 seconds, so a change shows within about 2 seconds.
 pcall(function()
     local document = document
-    local BASE = 'Data/ui/themes/rose/game/'
-    -- key, switch text, add-on name, the file that add-on changes
-    local KNOWN = {
-        {'dps_meter', 'DPS meter under the target', 'DPS Meter', 'focused_target.html'},
-        {'exp_tracker', 'EXP per hour on the EXP bar', 'HUD Trackers', 'hud.html'},
-        {'weapon_refresh', 'Keep the HUD weapon durability up to date', 'HUD Trackers', 'hud.html'},
-        {'friend_levels', 'Remembered friend levels', 'Friend Levels', 'friend_list.html'},
-        {'class_icons', 'Class icons in party and group', 'Party and Group Extras', 'party.html'},
-        {'summon_extras', 'Summon HP, range and low-HP warning', 'Summon Gauge Plus', 'summon_gauge.html'},
-    }
-    local flags = {}
-    pcall(function()
-        local f = io.open('sp_addons.txt', 'r')
-        if not f then return end
-        for line in f:lines() do
-            local k, v = line:match('^%s*([%w_]+)%s*=%s*(%d)')
-            if k then flags[k] = (v == '1') end
-        end
-        f:close()
-    end)
-    SP_ADDON_FLAGS = flags
-    local function installed(key, file)
-        local found, readable = false, false
+    local LIST, FLAGS, BASE = 'sp_addons_list.txt', 'sp_addons.txt', 'Data/ui/themes/rose/game/'
+    -- which window file each known add-on changes, used only to drop removed add-ons
+    local FILE = {dps_meter = 'focused_target.html', exp_tracker = 'hud.html', weapon_refresh = 'hud.html',
+                  friend_levels = 'friend_list.html', class_icons = 'party.html', summon_extras = 'summon_gauge.html'}
+    local flags, order = {}, {}
+    local function read_flags()
+        flags, order = {}, {}
         pcall(function()
-            local f = io.open(BASE .. file, 'r')
+            local f = io.open(FLAGS, 'r')
             if not f then return end
-            readable = true
-            local text = f:read('*a') or ''
+            for line in f:lines() do
+                local k, v = line:match('^%s*([%w_]+)%s*=%s*(%d)')
+                if k then flags[k] = (v == '1'); order[#order + 1] = k end
+            end
             f:close()
-            found = text:find('SP_ADDON_SWITCH ' .. key, 1, true) ~= nil
         end)
-        -- also counts if that window is open and has said hello
-        pcall(function() if type(_G) == 'table' and type(_G.SP_ADDON_APPLY) == 'table' and _G.SP_ADDON_APPLY[key] then found = true end end)
-        return found, readable
     end
     local function save()
         local ok = pcall(function()
-            local f = assert(io.open('sp_addons.txt', 'w'))
-            for _, a in ipairs(KNOWN) do f:write(a[1], '=', flags[a[1]] == false and 0 or 1, '\n') end
+            local f = assert(io.open(FLAGS, 'w'))
+            local done = {}
+            for _, k in ipairs(order) do
+                if not done[k] then f:write(k, '=', flags[k] == false and 0 or 1, '\n'); done[k] = true end
+            end
             f:close()
         end)
         local st = document:GetElementById('sp-addon-status')
-        if st and not ok then st.inner_rml = 'Could not save - this lasts until the game is closed.' end
+        if st and not ok then st.inner_rml = 'Could not save the switches.' end
+    end
+    -- still installed? (only checked when the game lets the UI read its files)
+    local function removed(key)
+        local file = FILE[key]
+        if not file then return false end
+        local gone = false
+        pcall(function()
+            local f = io.open(BASE .. file, 'r')
+            if not f then return end
+            local text = f:read('*a') or ''
+            f:close()
+            gone = text:find('SP_ADDON_SWITCH ' .. key, 1, true) == nil
+        end)
+        return gone
+    end
+    local function read_list()
+        local items, keep, dropped = {}, {}, false
+        pcall(function()
+            local f = io.open(LIST, 'r')
+            if not f then return end
+            for line in f:lines() do
+                local k, text, addon = line:match('^([%w_]+)|([^|]*)|(.*)$')
+                if k then
+                    if removed(k) then dropped = true
+                    else items[#items + 1] = {k, text, addon}; keep[#keep + 1] = line end
+                end
+            end
+            f:close()
+        end)
+        if dropped then
+            pcall(function()
+                local w = io.open(LIST, 'w')
+                if w then w:write(table.concat(keep, '\n'), #keep > 0 and '\n' or ''); w:close() end
+            end)
+        end
+        return items
     end
     local shown = nil
     local function build()
         local list = document:GetElementById('sp-addon-list')
         if not list then return end
-        local rows, keys, any_readable = {}, {}, false
-        for _, a in ipairs(KNOWN) do
-            local ok, readable = installed(a[1], a[4])
-            any_readable = any_readable or readable
-            if ok then
-                rows[#rows + 1] = '<div class="sp-addon-row"><input id="sp-addon-' .. a[1] .. '" type="checkbox"'
-                    .. (flags[a[1]] == false and '' or ' checked=""') .. ' /><label for="sp-addon-' .. a[1] .. '">'
-                    .. a[2] .. ' <span class="sp-addon-name">(' .. a[3] .. ')</span></label></div>'
-                keys[#keys + 1] = a[1]
-            end
-        end
-        local sig = table.concat(keys, ',')
+        read_flags()
+        local items = read_list()
+        local sig = {}
+        for _, it in ipairs(items) do sig[#sig + 1] = it[1] .. (flags[it[1]] == false and '0' or '1') end
+        sig = table.concat(sig, ',')
         if sig == shown then return end
         shown = sig
-        if #rows == 0 then
-            list.inner_rml = '<div class="sp-addon-row">' .. (any_readable and 'No add-ons with switches are installed.'
-                or 'Could not check which add-ons are installed.') .. '</div>'
-        else
-            list.inner_rml = table.concat(rows)
+        local rows = {}
+        for _, it in ipairs(items) do
+            rows[#rows + 1] = '<div class="sp-addon-row"><input id="sp-addon-' .. it[1] .. '" type="checkbox"'
+                .. (flags[it[1]] == false and '' or ' checked=""') .. ' /><label for="sp-addon-' .. it[1] .. '">'
+                .. it[2] .. ' <span class="sp-addon-name">(' .. it[3] .. ')</span></label></div>'
         end
-        for _, k in ipairs(keys) do
+        list.inner_rml = #rows > 0 and table.concat(rows)
+            or '<div class="sp-addon-row">No add-ons with switches have loaded yet.</div>'
+        for _, it in ipairs(items) do
+            local k = it[1]
             local box = document:GetElementById('sp-addon-' .. k)
             if box then
                 box:AddEventListener('change', function()
+                    read_flags()
                     flags[k] = box:HasAttribute('checked')
-                    SP_ADDON_FLAGS = flags
+                    local seen = false
+                    for _, o in ipairs(order) do if o == k then seen = true end end
+                    if not seen then order[#order + 1] = k end
                     save()
-                    -- open windows pick it up from sp_addons.txt within 2 seconds;
-                    -- when windows can share, tell them straight away too
-                    pcall(function()
-                        local fns = type(_G) == 'table' and type(_G.SP_ADDON_APPLY) == 'table' and _G.SP_ADDON_APPLY[k]
-                        if fns then for _, fn in ipairs(fns) do pcall(fn) end end
-                    end)
+                    shown = nil
                 end)
             end
         end
         local st = document:GetElementById('sp-addon-status')
-        if st then st.inner_rml = #rows > 0 and 'Each add-on you install adds its own switch here. Changes show within a couple of seconds.' or '' end
+        if st then st.inner_rml = #rows > 0 and 'Each add-on adds its own switch here. A change shows within about 2 seconds.' or '' end
     end
     pcall(build)
     document:AddEventListener('show', function() pcall(build) end)
