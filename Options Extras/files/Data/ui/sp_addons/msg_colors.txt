@@ -1,0 +1,2 @@
+msg_colors
+; Marks the Message Colours add-on as installed. Removed again with the add-on.

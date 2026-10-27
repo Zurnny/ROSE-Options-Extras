@@ -273,6 +273,11 @@
             .sp-addon-row { display: block; margin: 3dp 0; }
             .sp-addon-name { color: rgb(180, 180, 180); font-size: 11dp; }
             .sp-chat-sample { font-weight: 800; font-effect: outline(1dp black); }
+            /* Add-on sections: hidden unless that add-on is installed (script at the end of <head>) */
+            .sp-sec { display: none; }
+            .sp-sec.sp-shown { display: block; }
+            #game-options.sp-has-item_labels tr.sp-game-item-row { display: none; }
+            #game-options.sp-no-ui-tab #sp-ui-tab { display: none; }
         </style>
     <script>
 -- Dropped item label background: a 0-10 slider (0 = clear, 10 = solid).
@@ -379,7 +384,7 @@ end
     </script>
     <script>
 
--- Chat message colours (Options Extras add-on). Shared by options_bgfx.html (the
+-- Chat message colours (Message Colours add-on). Shared by options_bgfx.html (the
 -- picker) and chat_box.html (the messages). Written inline because the game
 -- ignores edited .lua files. Choices are saved to sp_chat_colors.txt.
 local CHANNELS = {{id='chat', name='Chat', default='rgb(255, 255, 255)'}, {id='shout', name='Shout', default='rgb(255, 105, 105)'}, {id='whisper', name='Whisper', default='rgb(255, 158, 232)'}, {id='trade', name='Trade', default='rgb(0, 210, 50)'}, {id='party', name='Party', default='rgb(189, 250, 255)'}, {id='clan', name='Clan', default='rgb(255, 228, 122)'}, {id='group', name='Group', default='rgb(156, 175, 243)'}, {id='quest', name='Quest', default='rgb(151, 221, 241)'}, {id='system', name='System', default='rgb(255, 224, 229)'}}
@@ -482,7 +487,7 @@ end
 
     </script>
     <script>
--- "Bring all windows on screen" (Options Extras add-on). Moves any window that sits
+-- "Bring all windows on screen" (Window Rescue add-on). Moves any window that sits
 -- partly or fully outside the game window back inside it. Windows already on
 -- screen, and full-screen layers (names, labels), are left alone.
 local ok, err = pcall(function()
@@ -522,117 +527,123 @@ local ok, err = pcall(function()
 end)
     </script>
     <script>
--- Add-on switches (Options Extras). Every add-on window lists itself in
--- sp_addons_list.txt when it loads (key|switch text|add-on), and this shows a
--- switch for each one listed, so each add-on brings its own switch. A window
--- that has never been open since the add-on was installed shows up after it
--- first opens. If an add-on is removed in the launcher, its switch is dropped
--- the next time Options opens (when the game lets the UI read its files).
--- Choices are saved in sp_addons.txt; each add-on window reads that every
--- 2 seconds, so a change shows within about 2 seconds.
+-- Add-on settings (shared: every add-on that adds something to Options ships
+-- this same file, so it doesn't matter which or how many are installed).
+-- An add-on counts as installed while its marker file
+-- Data/ui/sp_addons/<key>.txt exists; the launcher copies it in with the
+-- add-on and takes it out with it. Only installed add-ons show: the first one
+-- on the first line of Options > UI > Add-ons, the next one underneath, and
+-- so on. Add-ons with their own settings (Dropped Items, Windows, Message
+-- Colours) show their own section the same way.
+-- The switches are saved in sp_addons.txt as key=0/1. The Ice UI uses that
+-- file too, so every line is kept as it is and in the same order; only the
+-- switch that was changed is rewritten.
 pcall(function()
     local document = document
-    local LIST, FLAGS, BASE = 'sp_addons_list.txt', 'sp_addons.txt', 'Data/ui/themes/rose/game/'
-    -- which window file each known add-on changes, used only to drop removed add-ons
-    local FILE = {dps_meter = 'focused_target.html', exp_tracker = 'hud.html', weapon_refresh = 'hud.html',
-                  friend_levels = 'friend_list.html', class_icons = 'party.html', summon_extras = 'summon_gauge.html'}
-    local flags, order = {}, {}
+    local FLAGS = 'sp_addons.txt'
+    -- add-ons with an on/off switch: key, switch text, add-on name (listed in this order)
+    local SWITCHES = {
+        {'dps_meter', 'DPS meter under the target', 'DPS Meter'},
+        {'exp_tracker', 'EXP per hour when hovering the EXP bar', 'EXP Tracker'},
+        {'weapon_refresh', 'Keep the HUD weapon durability up to date', 'Weapon Refresh'},
+        {'friend_levels', 'Remembered levels in the friend and group lists', 'Friend Levels'},
+        {'class_icons', 'Class icons in party and group', 'Class Icons'},
+        {'party_buffs', 'Buff icon options in party and group', 'Party Buff Options'},
+        {'summon_extras', 'Summon HP, range and low-HP warning', 'Summon Gauge Plus'},
+        {'minimap_pad', 'Window under the minimized minimap', 'Minimap Window'},
+    }
+    -- add-ons with a section of their own: key, id of that section
+    local SECTIONS = {
+        {'item_labels', 'sp-sec-item_labels'},
+        {'window_rescue', 'sp-sec-window_rescue'},
+        {'msg_colors', 'sp-sec-msg_colors'},
+    }
+    local UI_TAB = {item_labels = true, window_rescue = true}   -- sections in the UI tab
+    local function el(id) return document:GetElementById(id) end
+    local function installed(key)
+        local yes = true      -- if the game won't let the UI read files, show everything
+        pcall(function()
+            local f = io.open('Data/ui/sp_addons/' .. key .. '.txt', 'r')
+            if f then f:close() else yes = false end
+        end)
+        return yes
+    end
+    -- sp_addons.txt: every line kept, in order
     local function read_flags()
-        flags, order = {}, {}
+        local vals, order = {}, {}
         pcall(function()
             local f = io.open(FLAGS, 'r')
             if not f then return end
             for line in f:lines() do
-                local k, v = line:match('^%s*([%w_]+)%s*=%s*(%d)')
-                if k then flags[k] = (v == '1'); order[#order + 1] = k end
-            end
-            f:close()
-        end)
-    end
-    local function save()
-        local ok = pcall(function()
-            local f = assert(io.open(FLAGS, 'w'))
-            local done = {}
-            for _, k in ipairs(order) do
-                if not done[k] then f:write(k, '=', flags[k] == false and 0 or 1, '\n'); done[k] = true end
-            end
-            f:close()
-        end)
-        local st = document:GetElementById('sp-addon-status')
-        if st and not ok then st.inner_rml = 'Could not save the switches.' end
-    end
-    -- still installed? (only checked when the game lets the UI read its files)
-    local function removed(key)
-        local file = FILE[key]
-        if not file then return false end
-        local gone = false
-        pcall(function()
-            local f = io.open(BASE .. file, 'r')
-            if not f then return end
-            local text = f:read('*a') or ''
-            f:close()
-            gone = text:find('SP_ADDON_SWITCH ' .. key, 1, true) == nil
-        end)
-        return gone
-    end
-    local function read_list()
-        local items, keep, dropped = {}, {}, false
-        pcall(function()
-            local f = io.open(LIST, 'r')
-            if not f then return end
-            for line in f:lines() do
-                local k, text, addon = line:match('^([%w_]+)|([^|]*)|(.*)$')
+                local k, v = line:match('^%s*([%w_]+)%s*=%s*(%d+)')
                 if k then
-                    if removed(k) then dropped = true
-                    else items[#items + 1] = {k, text, addon}; keep[#keep + 1] = line end
+                    if vals[k] == nil then order[#order + 1] = k end
+                    vals[k] = v
                 end
             end
             f:close()
         end)
-        if dropped then
-            pcall(function()
-                local w = io.open(LIST, 'w')
-                if w then w:write(table.concat(keep, '\n'), #keep > 0 and '\n' or ''); w:close() end
-            end)
-        end
-        return items
+        return vals, order
+    end
+    local function set_flag(key, on)
+        local vals, order = read_flags()
+        if vals[key] == nil then order[#order + 1] = key end
+        vals[key] = on and '1' or '0'
+        local ok = pcall(function()
+            local f = assert(io.open(FLAGS, 'w'))
+            for _, k in ipairs(order) do f:write(k, '=', vals[k], '\n') end
+            f:close()
+        end)
+        local st = el('sp-addon-status')
+        if st and not ok then st.inner_rml = 'Could not save the switch.' end
     end
     local shown = nil
     local function build()
-        local list = document:GetElementById('sp-addon-list')
-        if not list then return end
-        read_flags()
-        local items = read_list()
-        local sig = {}
-        for _, it in ipairs(items) do sig[#sig + 1] = it[1] .. (flags[it[1]] == false and '0' or '1') end
+        local body = el('game-options')
+        local vals = read_flags()
+        local have, ui_used = {}, false
+        for _, s in ipairs(SECTIONS) do
+            local on = installed(s[1])
+            local sec = el(s[2])
+            if sec then sec:SetClass('sp-shown', on) end
+            if body then body:SetClass('sp-has-' .. s[1], on) end
+            if on and UI_TAB[s[1]] then ui_used = true end
+        end
+        local items, sig = {}, {}
+        for _, it in ipairs(SWITCHES) do
+            if installed(it[1]) then
+                items[#items + 1] = it
+                sig[#sig + 1] = it[1] .. (vals[it[1]] == '0' and '0' or '1')
+            end
+        end
+        if #items > 0 then ui_used = true end
+        local group = el('sp-sec-switches')
+        if group then group:SetClass('sp-shown', #items > 0) end
+        if body then body:SetClass('sp-no-ui-tab', not ui_used) end
         sig = table.concat(sig, ',')
         if sig == shown then return end
         shown = sig
+        local list = el('sp-addon-list')
+        if not list then return end
         local rows = {}
         for _, it in ipairs(items) do
             rows[#rows + 1] = '<div class="sp-addon-row"><input id="sp-addon-' .. it[1] .. '" type="checkbox"'
-                .. (flags[it[1]] == false and '' or ' checked=""') .. ' /><label for="sp-addon-' .. it[1] .. '">'
+                .. (vals[it[1]] == '0' and '' or ' checked=""') .. ' /><label for="sp-addon-' .. it[1] .. '">'
                 .. it[2] .. ' <span class="sp-addon-name">(' .. it[3] .. ')</span></label></div>'
         end
-        list.inner_rml = #rows > 0 and table.concat(rows)
-            or '<div class="sp-addon-row">No add-ons with switches have loaded yet.</div>'
+        list.inner_rml = table.concat(rows)
         for _, it in ipairs(items) do
             local k = it[1]
-            local box = document:GetElementById('sp-addon-' .. k)
+            local box = el('sp-addon-' .. k)
             if box then
                 box:AddEventListener('change', function()
-                    read_flags()
-                    flags[k] = box:HasAttribute('checked')
-                    local seen = false
-                    for _, o in ipairs(order) do if o == k then seen = true end end
-                    if not seen then order[#order + 1] = k end
-                    save()
+                    set_flag(k, box:HasAttribute('checked'))
                     shown = nil
                 end)
             end
         end
-        local st = document:GetElementById('sp-addon-status')
-        if st then st.inner_rml = #rows > 0 and 'Each add-on adds its own switch here. A change shows within about 2 seconds.' or '' end
+        local st = el('sp-addon-status')
+        if st then st.inner_rml = 'A change shows within about 2 seconds.' end
     end
     pcall(build)
     document:AddEventListener('show', function() pcall(build) end)
@@ -1411,6 +1422,21 @@ end)
                         <h3><str string-id="776">Gameplay</str></h3>
                         <table class="main">
                             <tbody>
+                                <!-- these two move to Options > UI > Dropped Items while the Dropped Item Labels add-on is installed -->
+                                <tr class="sp-game-item-row">
+                                    <td></td>
+                                    <td>
+                                        <input id="item-name" type="checkbox" data-checked="game.show_item_name" onchange="game-itemname"/>
+                                        <label for="item-name"><str string-id="1367">Show dropped item name</str></label>
+                                    </td>
+                                </tr>
+                                <tr class="sp-game-item-row">
+                                    <td></td>
+                                    <td>
+                                        <input id="pickup-status" type="checkbox" data-checked="game.show_item_status" onchange="game-itemstatus"/>
+                                        <label for="pickup-status"><str string-id="1371">Show item pickup status</str></label>
+                                    </td>
+                                </tr>
                                 <tr>
                                     <td></td>
                                     <td>
@@ -1743,8 +1769,8 @@ end)
                             </table>
                         </div>
 
-                        <!-- Message Colours (Options Extras add-on; script at the end of <head>) -->
-                        <details>
+                        <!-- Message Colours add-on (script at the end of <head>); shown while it is installed -->
+                        <details id="sp-sec-msg_colors" class="sp-sec">
                             <summary>Message Colours</summary>
                             <div id="sp-chat-colors">Lua has not run in this window</div>
                             <div id="sp-chat-colors-status" style="font-size: 11dp; color: rgb(180, 180, 180);"></div>
@@ -1860,29 +1886,37 @@ end)
 
                 </div>
             </panel>
-            <!-- ===================== UI (Options Extras add-on) ===================== -->
-            <tab class="default">UI</tab>
+            <!-- ===================== UI (add-ons) ===================== -->
+            <!-- Each add-on's part shows only while that add-on is installed, one under the other -->
+            <tab id="sp-ui-tab" class="default">UI</tab>
             <panel class="content-box">
-                <div class="options-panel">
-                        <div class="settings-group">
+                <div class="options-panel" data-model="options-data">
+                        <div id="sp-sec-switches" class="settings-group sp-sec">
+                            <h3>Add-ons</h3>
+                            <!-- one line per installed add-on, filled in by the script at the end of <head> -->
+                            <div id="sp-addon-list"></div>
+                            <div id="sp-addon-status" style="font-size: 11dp; color: rgb(180, 180, 180);"></div>
+                        </div>
+                        <!-- Dropped Item Labels add-on -->
+                        <div id="sp-sec-item_labels" class="settings-group sp-sec">
                             <h3>Dropped Items</h3>
                             <table class="main">
                                 <tbody>
                                         <tr>
                                             <td>Item names</td>
                                             <td>
-                                                <input id="item-name" type="checkbox" data-checked="game.show_item_name" onchange="game-itemname"/>
-                                                <label for="item-name"><str string-id="1367">Show dropped item name</str></label>
+                                                <input id="sp-item-name" type="checkbox" data-checked="game.show_item_name" onchange="game-itemname"/>
+                                                <label for="sp-item-name"><str string-id="1367">Show dropped item name</str></label>
                                             </td>
                                         </tr>
                                         <tr>
                                             <td>Pickup status</td>
                                             <td>
-                                                <input id="pickup-status" type="checkbox" data-checked="game.show_item_status" onchange="game-itemstatus"/>
-                                                <label for="pickup-status"><str string-id="1371">Show item pickup status</str></label>
+                                                <input id="sp-pickup-status" type="checkbox" data-checked="game.show_item_status" onchange="game-itemstatus"/>
+                                                <label for="sp-pickup-status"><str string-id="1371">Show item pickup status</str></label>
                                             </td>
                                         </tr>
-                                        <!-- Label background slider (script at the end of <head>); moved here from the Game tab; shown while item names are on -->
+                                        <!-- Label background slider (script at the end of <head>); shown while item names are on -->
                                         <tr data-if="game.show_item_name">
                                             <td>Label background</td>
                                             <td>
@@ -1896,18 +1930,11 @@ end)
                                 </tbody>
                             </table>
                         </div>
-                        <div class="settings-group">
-                            <h3>Add-ons</h3>
-                            <!-- Filled in by the add-on switch script (end of <head>): one switch per add-on
-                                 that is installed right now; saved to sp_addons.txt -->
-                            <div id="sp-addon-list"></div>
-                            <div id="sp-addon-status" style="font-size: 11dp; color: rgb(180, 180, 180);"></div>
-                        </div>
-                        <div class="settings-group">
+                        <!-- Window Rescue add-on: pull every window back into view (script at the end of <head>) -->
+                        <div id="sp-sec-window_rescue" class="settings-group sp-sec">
                             <h3>Windows</h3>
                             <table class="main">
                                 <tbody>
-                                    <!-- Options Extras add-on: pull every window back into view (script at the end of <head>) -->
                                     <tr>
                                         <td>Windows</td>
                                         <td>

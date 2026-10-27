@@ -1,0 +1,2 @@
+item_labels
+; Marks the Dropped Item Labels add-on as installed. Removed again with the add-on.
