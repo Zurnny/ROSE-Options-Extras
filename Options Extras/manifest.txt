@@ -1,14 +1,14 @@
 ; Update list for Options Extras. Upload this next to mod.ini and the files folder.
-version=2.13
-2acd0afd1564fafdb5d6d04430634e88e08dc245|mod.ini
+version=2.14
+5b4c2199365c47557e545dd28cece70f4bf5610b|mod.ini
 ec747d30b487d8f935a0d683a28273700f6e96cc|files/Data/ui/sp_addons/item_labels.txt
 4f17a445f83fe2e1f2df6d616cbffdfaf0bb60db|files/Data/ui/sp_addons/msg_colors.txt
 8de020803e1cb61b359414c67b2731d7b0dfbf85|files/Data/ui/sp_addons/window_rescue.txt
 babc20e31ed5e4e0613877aff47d3312362621b3|files/Data/ui/themes/rose/game/chat_box.html
 80fc15abb9b5f6618ea33938f40bb04caafc29ee|files/Data/ui/themes/rose/game/dropped_item_labels.html
 1448712518c250158022e27eee1408bdd42eadec|files/Data/ui/themes/rose/game/menu.html
-7107b69fefdb768eb7b6e3919c3cf6cd2f99c7a8|files/Data/ui/themes/rose/game/options_bgfx.html
-2d3b3ec1fd292a99466dd3d88e88f41744e0bc45|files/Data/ui/themes/rose/game/sp_addons_window.html
+9ffac394fb7529b7d21c0378cea78e3d1ca2b906|files/Data/ui/themes/rose/game/options_bgfx.html
+954549bdb0200531ee4ce431fafd1119fc3d2849|files/Data/ui/themes/rose/game/sp_addons_window.html
 d49230528a09bf1485a759277d682bf3a6d98230|files/Data/ui/themes/rose/imgs/sp_addons_menu.dds
 c9735755117dd4fa76a010d9d13085fefdd2dfb1|files/Data/ui/themes/rose/styles/sp_addons_steampunk.css
 d91eeca9018f74fcc0129e8769899178111feb8f|files/Data/ui/themes/rose/styles/sp_addons_steampunk_sprites.css
