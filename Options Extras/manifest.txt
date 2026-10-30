@@ -1,11 +1,14 @@
 ; Update list for Options Extras. Upload this next to mod.ini and the files folder.
-version=2.8
-51f44a45a8a833d660ac8f4dd11b1918a99b4cad|mod.ini
+version=2.9
+c7bc25d22afc600141e302fb5dcab598b9511e17|mod.ini
 ec747d30b487d8f935a0d683a28273700f6e96cc|files/Data/ui/sp_addons/item_labels.txt
 4f17a445f83fe2e1f2df6d616cbffdfaf0bb60db|files/Data/ui/sp_addons/msg_colors.txt
 8de020803e1cb61b359414c67b2731d7b0dfbf85|files/Data/ui/sp_addons/window_rescue.txt
 f01e6878aa1190b60af5cf6f55a047bf663ade3e|files/Data/ui/themes/rose/game/chat_box.html
 80fc15abb9b5f6618ea33938f40bb04caafc29ee|files/Data/ui/themes/rose/game/dropped_item_labels.html
-9419a051950bc7a749862d6ba19d7b93e64390fa|files/Data/ui/themes/rose/game/options_bgfx.html
+f73e3ff2449c21cd26b382a0d965ad68ce2c7387|files/Data/ui/themes/rose/game/menu.html
+4afc0dd827e57b69b5a89fb34676c6c7ec0f575a|files/Data/ui/themes/rose/game/options_bgfx.html
+ed2fbfb375ff419cb5031dcd9a8dbbf668f25caa|files/Data/ui/themes/rose/game/sp_addons_window.html
+105de6beaf0577b9a401f1efb47ffe1dedb522e2|files/Data/ui/themes/rose/imgs/sp_addons_menu.dds
 c9735755117dd4fa76a010d9d13085fefdd2dfb1|files/Data/ui/themes/rose/styles/sp_addons_steampunk.css
-0284ef27b24d89b2dfa20d4956773d170fd06ef1|files/Data/ui/themes/rose/styles/sp_addons_steampunk_sprites.css
+d91eeca9018f74fcc0129e8769899178111feb8f|files/Data/ui/themes/rose/styles/sp_addons_steampunk_sprites.css
